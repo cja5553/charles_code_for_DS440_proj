@@ -1,0 +1,18 @@
+install.packages("data.table")
+library(data.table)
+install.packages("googledrive")
+library("googledrive")
+
+coordinates<-read.csv("cbg_geographic_data.csv")
+coordinates<-subset(coordinates, select = -c(amount_land, amount_water))
+names(coordinates)[names(coordinates) == "longitude"] <- "census_longitude"
+names(coordinates)[names(coordinates) == "latitude"] <- "census_latitude"
+
+system("gdown --id 1PEua20LGFhGBHq7_JD4x6JTTMmijfnjo")
+aggragated <- read.csv("Updated_aggragated.csv")
+aggragated<-subset(aggragated, select = -c(X))
+
+
+data_merge2<-merge(x = aggragated, y = coordinates, by.x = "vistor_census_block", by.y="census_block_group", all.x = TRUE)
+write.csv(data_merge2, file = 'merged_2020.csv')
+
