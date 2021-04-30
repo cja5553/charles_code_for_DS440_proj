@@ -1,0 +1,54 @@
+---
+title: "merging_and_aggregating_datasets"
+output: pdf_document
+---
+Read packages
+```{r setup, include=FALSE}
+install.packages("googledrive")
+library("googledrive")
+install.packages("data.table")
+library(data.table)
+
+```
+
+Reading the dataset
+```{r}
+
+system("gdown --id 1UVv4-JRAPIUnHJRmCPkZpYonlBO1xCQ2")
+coordinates<-read.csv("cbg_geographic_data.csv")
+coordinates<-subset(coordinates, select = -c(amount_land, amount_water))
+names(coordinates)[names(coordinates) == "longitude"] <- "census_longitude"
+names(coordinates)[names(coordinates) == "latitude"] <- "census_latitude"
+```
+
+
+Merging datasets
+```{r}
+
+# https://drive.google.com/file/d/1PEua20LGFhGBHq7_JD4x6JTTMmijfnjo/view?usp=sharing
+system("gdown --id 1PEua20LGFhGBHq7_JD4x6JTTMmijfnjo")
+aggragated <- read.csv("Updated_aggragated_2020.csv")
+aggragated<-subset(aggragated, select = -c(X))
+
+data_merge2<-merge(x = aggragated, y = coordinates, by.x = "vistor_census_block", by.y="census_block_group", all.x = TRUE)
+
+
+
+```
+
+Aggreagating
+```{r}
+data_merge2<-covid_aggragated
+covid_aggragated <- subset(covid_aggragated, select = -c(X))
+covid_aggdata <-aggregate(vistor_count~., data=covid_aggragated, mean)
+covid_aggdata<-data.table(covid_aggdata)
+names(covid_aggdata)[names(covid_aggdata) == "vistor_count"] <- "mean_monthly_visitations"
+
+```
+
+
+writing the dataset
+```{r}
+write.csv(covid_aggdata,file="covid_mean_aggregated.csv")
+```
+
