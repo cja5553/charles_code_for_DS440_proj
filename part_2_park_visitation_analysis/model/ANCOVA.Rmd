@@ -1,0 +1,116 @@
+---
+title: "ANCOVA"
+
+output: pdf_document
+---
+
+```{r}
+library(lsmeans)
+library(car)
+library(multcompView)
+library(lme4)
+library(lmerTest)
+library(aplpack)
+library(ggplot2)
+library(vioplot)
+library(bit64)
+library(olsrr)
+library(lmtest)
+library(goftest)
+library(MASS)
+## Warning: package 'lmtest' was built under R version 3.6.3
+## Loading required packag
+data<-read.csv("merged_mean_aggregated.csv")
+options("scipen"=99)
+```
+
+# Filter Out Relevant Data
+
+```{r}
+data<-subset(data, select = c(safegraph_place_id,vistor_census_block,COVID_Start, minorityportion,MEDIAN.INCOME,census_block_classification,dist,mean_monthly_visitations))
+```
+
+
+```{r}
+data
+```
+
+# Built the ANCOVA model
+
+```{r}
+## fit model
+fit.ANCOVA=aov((mean_monthly_visitations)~(COVID_Start)+minorityportion+MEDIAN.INCOME+dist+(census_block_classification)+(COVID_Start):minorityportion+(COVID_Start):MEDIAN.INCOME+(COVID_Start):dist+(COVID_Start):(census_block_classification)
+             +minorityportion:MEDIAN.INCOME+minorityportion:dist+minorityportion:(census_block_classification)
+             +MEDIAN.INCOME:dist+MEDIAN.INCOME:(census_block_classification)+
+               dist:(census_block_classification),data=data)
+```
+
+# Test the assumptions to see if they fit   
+
+BP test: Test for heteroskedasticity (acceptable if $p-value<0.05$)  
+Anderson Darling Test: Test for normality (acceptable if $p-value<0.05$)  
+
+```{r}
+ad.test(studres(fit.ANCOVA))
+bptest(fit.ANCOVA)
+```
+
+
+Assumptions okay. Move on to results  
+
+```{r}
+## ANOVA table
+anova(fit.ANCOVA)
+```
+
+ 
+# Make the neccessary Plots  
+ 
+## Changes in visitation due to COVID plot
+
+```{r}
+mynames<-c("pre-COVID", "COVID")
+vioplot(data$mean_monthly_visitations~data$COVID_Start, names=mynames,ylab="mean monthly visitations", xlab="COVID-era")
+```
+## Census block urban classification and changes due to COVID  
+
+```{r}
+one<-data[which(data$COVID_Start=="True"),]
+two<-data[which(data$COVID_Start=="False"),]
+vioplot(one$mean_monthly_visitations~one$census_block_classification, data=one, col = "palevioletred", plotCentre = "line", side = "right", xlab="Census block classification", ylab="mean monthly visitations")
+vioplot(two$mean_monthly_visitations~two$census_block_classification, data=two, col = "lightblue", plotCentre = "line", side = "left", add = T)
+#title(xlab = "Census Classification type", ylab = "Mean monthly visitations")
+legend("topleft", fill = c("lightblue", "palevioletred"), legend = c("pre-covid", "covid"))
+```
+## Changes to visitations to national parks amidst COVID19 based on diversity of Census Block Groups  
+
+```{r}
+
+ggplot(data = data, aes(x = minorityportion, y = mean_monthly_visitations, color = COVID_Start)) +
+        geom_smooth(method = "lm") +
+        labs(title = "",
+             x = "minority portion from visitor census block group",
+             y = "mean monthly visitations", color="COVID/pre-covid era")+scale_color_discrete(labels = mynames)
+```
+
+## Changes to visitations to national parks amidst COVID19 based on distance from Census Block Groups  
+
+```{r}
+
+ggplot(data = data, aes(x = dist, y = mean_monthly_visitations, color = COVID_Start)) +
+        geom_smooth(method = "lm") +
+        labs(title = "",
+             x = "distance from visitor census block group",
+             y = "mean monthly visitations", color="COVID/pre-covid era")+scale_color_discrete(labels = mynames)
+```
+## Changes to visitations to national parks amidst COVID19 based on Median Income of Census Block Groups  
+
+
+```{r}
+
+ggplot(data = data, aes(x = MEDIAN.INCOME, y = mean_monthly_visitations, color = COVID_Start)) +
+        geom_smooth(method = "lm") +
+        labs(title = "",
+             x = "Median income from vistors census block group",
+             y = "mean monthly visitations", color="COVID/pre-covid era")+scale_color_discrete(labels = mynames)
+```
