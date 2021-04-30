@@ -1,0 +1,83 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r,warning=FALSE,message=FALSE, include=FALSE}
+# import the library
+library(data.table)
+library(tidyverse)
+library(rmarkdown)
+library(ggplot2)
+library(plyr)
+library(lsmeans)
+library(multcompView)
+library(lmtest)
+library(nortest)
+library(MASS)
+library(olsrr)
+library(nortest)
+library(lsmeans)
+library(car)
+library(multcompView)
+library(lme4)
+library(lmerTest)
+library(text2vec)
+library(pdist)
+library(olsrr)
+library(MASS)
+library(dplyr)
+library(tibble)
+library(jmuOutlier)
+library(Epi)
+library(geosphere)
+library(bit64)
+options(scipen = 999)
+```
+
+
+```{r}
+# read the cleaned parks data
+aggragated <- read.csv("aggragated.national.data.csv")
+aggragated<-subset(aggragated, select = -c(X))
+relevant_census <- read.csv("relevant.data.csv")
+relevant_census <- subset(relevant_census, select = -c(X))
+data_merge1<-merge(x = aggragated, y = relevant_census, by.x = "vistor_census_block", by.y="census_block_group", all.x = TRUE)
+```
+
+
+```{r}
+# Read the census data
+coordinates<-read.csv("cbg_geographic_data.csv")
+coordinates<-subset(coordinates, select = -c(amount_land, amount_water))
+names(coordinates)[names(coordinates) == "longitude"] <- "census_longitude"
+names(coordinates)[names(coordinates) == "latitude"] <- "census_latitude"
+
+```
+
+```{r}
+# merging the dataset with relevant data
+data_merge2<-merge(x = data_merge1, y = coordinates, by.x = "vistor_census_block", by.y="census_block_group", all.x = TRUE)
+park_coordinates<-read.csv("park_poi_all_labeled_national.csv")
+park_coordinates<-subset(park_coordinates, select = c(safegraph_place_id, latitude,longitude))
+names(park_coordinates)[names(park_coordinates) == "longitude"] <- "park_longitude"
+names(park_coordinates)[names(park_coordinates) == "latitude"] <- "park_latitude"
+data_merge3<-merge(x = data_merge2, y = park_coordinates, by.x = "safegraph_place_id", by.y="safegraph_place_id", all.x = TRUE)
+
+```
+
+
+```{r}
+# calculating distance
+data_merge3<-data_merge3 %>%  
+    mutate(dist = distHaversine(cbind(census_longitude, census_latitude), cbind(park_longitude, park_latitude)))
+```
+
+
+
+```{r}
+# writing the csv file
+write.csv(data_merge3, file = 'merged.csv')
+```
+
