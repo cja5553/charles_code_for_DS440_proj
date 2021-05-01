@@ -1,1 +1,1 @@
-src contains the folders of the codes i used for this component of the project
+features contains the codes that were targetted at cleaning, merging and aggregating the data to fit the methods
